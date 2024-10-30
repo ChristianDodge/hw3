@@ -1,0 +1,305 @@
+<!--
+File: hw3.html
+GUI Assignment: Creating an Interactive Dynamic Table
+Christian Dodge
+
+This html file is for generating a multiplication table based on user input. The user defines the dimensions of the table.
+It uses CSS, HTML, and JavaScript.
+
+Changelog:
+10/30/2024: Created by CD.
+10/30/2024: Added all elements for multiplication table generation (all HTML, CSS, and JavaScript).
+
+Image Source(s):
+N/A.
+
+Other Source(s):
+N/A.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplication Table Generator</title>
+    <style>
+        /* Base layout styles for the entire application */
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;  /* Center the content with auto margins */
+            padding: 0 20px;
+        }
+
+        /* Styles for the form container section */
+        .form-container {
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;  /* Rounded corners */
+            margin-bottom: 20px;
+        }
+
+        /* Style for each form input group */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        /* Label styling for form inputs */
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        /* Style for number input fields */
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;  /* Include padding in width calculation */
+        }
+
+        /* Error display container styling */
+        .error-container {
+            background-color: #ffebee;
+            border: 1px solid #ef5350;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 15px;
+            display: none;  /* Hidden by default */
+        }
+
+        /* Style for inputs in error state */
+        .input-error {
+            border-color: #ef5350;
+        }
+
+        /* Style for error message text */
+        .error-text {
+            color: #c62828;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        /* Generate button styling */
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        /* Button hover effect */
+        button:hover {
+            background-color: #45a049;
+        }
+
+        /* Multiplication table styling */
+        .multiplication-table {
+            margin-top: 20px;
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Table cell and header styling */
+        .multiplication-table th,
+        .multiplication-table td {
+            padding: 12px 8px;
+            text-align: center;
+            border-right: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+        }
+
+        /* Table header specific styling */
+        .multiplication-table th {
+            background-color: #000000;
+            color: white;
+            font-weight: bold;
+        }
+
+        /* Zebra striping for table rows */
+        .multiplication-table tr:nth-child(even) {
+            background-color: #a1a1a1;
+        }
+
+        /* Container for table with horizontal scroll */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Multiplication Table Generator</h1>
+    
+    <!-- Form container for input fields -->
+    <div class="form-container">
+        <!-- Container for displaying validation errors -->
+        <div id="errorContainer" class="error-container"></div>
+
+        <!-- Main form with input fields -->
+        <form id="tableForm" onsubmit="return generateTable(event)">
+            <!-- Start Row input -->
+            <div class="form-group">
+                <label for="startRow">Start Row:</label>
+                <input type="number" id="startRow" value="-5">
+                <div class="error-text" id="startRowError"></div>
+            </div>
+
+            <!-- End Row input -->
+            <div class="form-group">
+                <label for="endRow">End Row:</label>
+                <input type="number" id="endRow" value="5">
+                <div class="error-text" id="endRowError"></div>
+            </div>
+
+            <!-- Start Column input -->
+            <div class="form-group">
+                <label for="startCol">Start Column:</label>
+                <input type="number" id="startCol" value="-5">
+                <div class="error-text" id="startColError"></div>
+            </div>
+
+            <!-- End Column input -->
+            <div class="form-group">
+                <label for="endCol">End Column:</label>
+                <input type="number" id="endCol" value="5">
+                <div class="error-text" id="endColError"></div>
+            </div>
+
+            <button type="submit">Generate Table</button>
+        </form>
+    </div>
+
+    <!-- Container for the generated multiplication table -->
+    <div id="tableOutput" class="table-container"></div>
+
+    <script>
+
+        // Validates individual input values.
+        function validateInput(value) {
+            // Check if value is empty or not a number
+            if (value === '' || isNaN(value)) {
+                return `Please enter a valid number for the Start Row/Column and End Row/Column.`;
+            }
+            
+            // Ensure value is within the allowed range (-50 to 50)
+            if (value < -50 || value > 50) {
+                return `Start Row and End Row must be between -50 and 50.`;
+            }
+            
+            return null;
+        }
+
+        // Validates that start value is not greater than end value
+        function validateRange(start, end, type) {
+            if (start > end) {
+                return `Start Row/Column cannot be greater than End Row/Column.`;
+            }
+            return null;
+        }
+
+        // Clears all error messages and error styling
+        function clearErrors() {
+            // Hide and clear the main error container
+            document.getElementById('errorContainer').style.display = 'none';
+            document.getElementById('errorContainer').textContent = '';
+            
+            // Clear individual field error messages
+            const errorFields = document.querySelectorAll('.error-text');
+            errorFields.forEach(field => field.textContent = '');
+            
+            // Remove error styling from all inputs
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach(input => input.classList.remove('input-error'));
+        }
+
+        // Displays error messages in the error container.
+        function showErrors(errors) {
+            const errorContainer = document.getElementById('errorContainer');
+            if (errors.length > 0) {
+                errorContainer.style.display = 'block';
+                errorContainer.innerHTML = errors.join('<br>');
+            }
+        }
+
+        // Handles form submission and table generation
+        function generateTable(event) {
+            event.preventDefault();
+            clearErrors();
+
+            const errors = [];
+            const values = {};
+
+            // Validate all input fields
+            const fields = ['startRow', 'endRow', 'startCol', 'endCol'];
+            fields.forEach(field => {
+                const input = document.getElementById(field);
+                const value = parseInt(input.value);
+                values[field] = value;
+
+                // Check for validation errors
+                const error = validateInput(value, field.replace(/([A-Z])/g, ' $1').toLowerCase());
+                if (error) {
+                    errors.push(error);
+                    input.classList.add('input-error');
+                    document.getElementById(`${field}Error`).textContent = error;
+                }
+            });
+
+            // Validate that start values are not greater than end values
+            const rowRangeError = validateRange(values.startRow, values.endRow, 'row');
+            const colRangeError = validateRange(values.startCol, values.endCol, 'column');
+
+            if (rowRangeError) errors.push(rowRangeError);
+            if (colRangeError) errors.push(colRangeError);
+
+            // Display any errors and stop if validation failed
+            if (errors.length > 0) {
+                showErrors(errors);
+                return false;
+            }
+
+            // Generate the multiplication table if validation passes
+            try {
+                let tableHTML = '<table class="multiplication-table">';
+                
+                // Generate header row with column numbers
+                tableHTML += '<tr><th></th>';
+                for (let j = values.startCol; j <= values.endCol; j++) {
+                    tableHTML += `<th>${j}</th>`;
+                }
+                tableHTML += '</tr>';
+
+                // Generate table body with multiplication results
+                for (let i = values.startRow; i <= values.endRow; i++) {
+                    tableHTML += '<tr>';
+                    tableHTML += `<th>${i}</th>`;  // Row header
+                    for (let j = values.startCol; j <= values.endCol; j++) {
+                        tableHTML += `<td>${i * j}</td>`;  // Multiplication result
+                    }
+                    tableHTML += '</tr>';
+                }
+                tableHTML += '</table>';
+
+                // Display the generated table
+                document.getElementById('tableOutput').innerHTML = tableHTML;
+            } catch (error) {
+                showErrors(['An error occurred while generating the table. Please try again with different values.']);
+            }
+
+            return false;
+        }
+    </script>
+</body>
+</html>
